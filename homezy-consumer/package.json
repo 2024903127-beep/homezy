@@ -1,0 +1,53 @@
+{
+  "name": "homezy-consumer",
+  "version": "0.1.0",
+  "main": "node_modules/expo/AppEntry.js",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
+    "@react-navigation/bottom-tabs": "^6.5.20",
+    "@react-navigation/native": "^6.1.17",
+    "@react-navigation/native-stack": "^6.9.26",
+    "@tanstack/react-query": "^5.40.0",
+    "axios": "^1.7.2",
+    "date-fns": "^3.6.0",
+    "expo": "~57.0.21",
+    "expo-device": "~57.0.1",
+    "expo-linear-gradient": "~57.0.2",
+    "expo-location": "~57.0.16",
+    "expo-notifications": "~57.0.17",
+    "expo-print": "~57.0.1",
+    "expo-secure-store": "~57.0.3",
+    "expo-sharing": "~57.0.18",
+    "expo-status-bar": "~57.0.1",
+    "lucide-react-native": "^1.28.0",
+    "react": "19.2.3",
+    "react-hook-form": "^7.51.5",
+    "react-native": "0.86.3",
+    "react-native-maps": "1.27.2",
+    "react-native-mmkv": "^2.12.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
+    "react-native-vector-icons": "^10.1.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@types/react": "~19.2.4",
+    "@types/react-native-vector-icons": "^6.4.18",
+    "babel-plugin-module-resolver": "^5.0.2",
+    "babel-preset-expo": "~57.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-universe": "^13.0.0",
+    "typescript": "~5.9.2"
+  }
+}

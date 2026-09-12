@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "Homezy Partner",
+    "slug": "homezy-partner",
+    "scheme": "homezypartner",
+    "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A73E8"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.homezy.partner",
+      "config": {
+        "googleMapsApiKey": "REPLACE_WITH_IOS_GOOGLE_MAPS_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Homezy Partner uses your location to receive nearby job requests and navigate to customers.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Homezy Partner tracks your location while on duty so customers can see your live arrival status.",
+        "NSCameraUsageDescription": "Homezy Partner uses your camera to capture KYC verification documents and job completion proof photos.",
+        "NSPhotoLibraryUsageDescription": "Homezy Partner accesses your photo library so you can upload existing document scans and trade certificates.",
+        "NSUserNotificationsUsageDescription": "Homezy Partner sends instant push notifications when new customer jobs and emergency service requests are available."
+      }
+    },
+    "android": {
+      "package": "com.homezy.partner",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#1A73E8"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "REPLACE_WITH_ANDROID_GOOGLE_MAPS_KEY"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "extra": {
+      "apiBaseUrl": "http://10.13.183.126:4000/v1",
+      "_productionNote": "Set EXPO_PUBLIC_API_URL=https://api.homezy.in before running eas build"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      "expo-image-picker",
+      "expo-status-bar"
+    ]
+  }
+}

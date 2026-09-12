@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Homezy",
+    "slug": "homezy-consumer",
+    "scheme": "homezy",
+    "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F9D58"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.homezy.consumer",
+      "config": {
+        "googleMapsApiKey": "REPLACE_WITH_IOS_GOOGLE_MAPS_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Homezy uses your location to find nearby verified service professionals and auto-detect your delivery address.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Homezy uses your location to track your service professional's live arrival status in real time.",
+        "NSCameraUsageDescription": "Homezy uses your camera to photograph appliances, cleaning areas, or repair issues for accurate service estimation.",
+        "NSPhotoLibraryUsageDescription": "Homezy accesses your photo library so you can select and upload photos of repair work.",
+        "NSUserNotificationsUsageDescription": "Homezy sends notifications regarding booking status updates, technician arrival, and service invoices."
+      }
+    },
+    "android": {
+      "package": "com.homezy.consumer",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#0F9D58"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "REPLACE_WITH_ANDROID_GOOGLE_MAPS_KEY"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "extra": {
+      "apiBaseUrl": "http://10.13.183.126:4000/v1",
+      "_productionNote": "Set EXPO_PUBLIC_API_URL=https://api.homezy.in before running eas build"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      "expo-sharing"
+    ]
+  }
+}
