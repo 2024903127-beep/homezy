@@ -15,6 +15,8 @@ import { AdminCategoriesController } from './admin-categories.controller';
 import { AdminServicesController } from './admin-services.controller';
 import { AdminCouponsController } from './admin-coupons.controller';
 import { AdminBannersController } from './admin-banners.controller';
+import { AdminSettingsController } from './admin-settings.controller';
+import { AdminSettingsService } from './admin-settings.service';
 
 @Module({
   imports: [UsersModule, ProvidersModule, BookingsModule, CategoriesModule, CatalogModule, CouponsModule, BannersModule],
@@ -27,7 +29,8 @@ import { AdminBannersController } from './admin-banners.controller';
     AdminServicesController,
     AdminCouponsController,
     AdminBannersController,
+    AdminSettingsController,
   ],
-  providers: [AdminDashboardService],
+  providers: [AdminDashboardService, AdminSettingsService],
 })
 export class AdminModule {}

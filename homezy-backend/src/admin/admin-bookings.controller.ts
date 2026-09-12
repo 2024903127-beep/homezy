@@ -17,4 +17,14 @@ export class AdminBookingsController {
   reassign(@Param('id') id: string, @Body('providerId') providerId: string) {
     return this.bookingsService.reassignProvider(id, providerId);
   }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: BookingStatus,
+    @Body('note') note?: string,
+  ) {
+    return this.bookingsService.adminUpdateStatus(id, status, note);
+  }
 }
+

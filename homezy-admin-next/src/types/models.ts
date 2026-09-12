@@ -1,4 +1,4 @@
-﻿export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 export type BookingStatus = 'PENDING'|'CONFIRMED'|'PROVIDER_ASSIGNED'|'PROVIDER_ARRIVED'|'IN_PROGRESS'|'COMPLETED'|'CANCELLED';
 export type AdminRole = 'SUPER_ADMIN' | 'OPS' | 'SUPPORT' | 'FINANCE';
 export interface AdminUser { id: string; name: string; email: string; role: AdminRole; }
@@ -14,6 +14,7 @@ export interface Category { id: string; name: string; iconUrl?: string; isActive
 export interface Service {
   id: string; categoryId: string; category?: Category; name: string; description: string;
   price: number; estimatedDurationMinutes: number; imageUrl?: string;
+  images?: string[];
   inclusions: string[]; exclusions: string[]; isActive: boolean;
 }
 export interface Booking {

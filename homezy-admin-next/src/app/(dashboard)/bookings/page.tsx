@@ -1,51 +1,53 @@
-﻿'use client';
+﻿"use client";
 
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CalendarCheck,
-  Search,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  UserCheck,
-  MapPin,
-  IndianRupee,
-  Phone,
-  Eye,
-  UserPlus, FileText,
-  X,
-  Sparkles,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import apiClient from '@/lib/api';
-import { Booking, BookingStatus, Provider } from '@/types/models';
+  CalendarCheck, Search, CheckCircle2, Clock, AlertTriangle,
+  UserCheck, IndianRupee, Phone, Eye, UserPlus, FileText,
+  X, MessageSquare, XCircle, ChevronDown,
+} from "lucide-react";
+import { toast } from "sonner";
+import apiClient from "@/lib/api";
+import { Booking, BookingStatus, Provider } from "@/types/models";
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; bg: string; text: string }> = {
-  PENDING: { label: 'Pending Match', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700' },
-  CONFIRMED: { label: 'Confirmed', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700' },
-  PROVIDER_ASSIGNED: { label: 'Provider Assigned', bg: 'bg-indigo-50 border-indigo-200', text: 'text-indigo-700' },
-  PROVIDER_ARRIVED: { label: 'Pro Arrived', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-700' },
-  IN_PROGRESS: { label: 'In Progress', bg: 'bg-cyan-50 border-cyan-200', text: 'text-cyan-700' },
-  COMPLETED: { label: 'Completed', bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700' },
-  CANCELLED: { label: 'Cancelled', bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700' },
+  PENDING: { label: "Pending Match", bg: "bg-amber-50 border-amber-200", text: "text-amber-700" },
+  CONFIRMED: { label: "Confirmed", bg: "bg-blue-50 border-blue-200", text: "text-blue-700" },
+  PROVIDER_ASSIGNED: { label: "Provider Assigned", bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-700" },
+  PROVIDER_ARRIVED: { label: "Pro Arrived", bg: "bg-purple-50 border-purple-200", text: "text-purple-700" },
+  IN_PROGRESS: { label: "In Progress", bg: "bg-cyan-50 border-cyan-200", text: "text-cyan-700" },
+  COMPLETED: { label: "Completed", bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
+  CANCELLED: { label: "Cancelled", bg: "bg-rose-50 border-rose-200", text: "text-rose-700" },
 };
+
+const FILTER_TABS: { label: string; value: string }[] = [
+  { label: "All", value: "ALL" },
+  { label: "🔴 Pending", value: "PENDING" },
+  { label: "✅ Assigned", value: "PROVIDER_ASSIGNED" },
+  { label: "🔧 In Progress", value: "IN_PROGRESS" },
+  { label: "✔ Completed", value: "COMPLETED" },
+  { label: "✗ Cancelled", value: "CANCELLED" },
+];
 
 export default function BookingsOpsPage() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [reassigning, setReassigning] = useState(false);
-  const [targetProviderId, setTargetProviderId] = useState('');
+  const [targetProviderId, setTargetProviderId] = useState("");
+  const [cancelNote, setCancelNote] = useState("");
+  const [actioning, setActioning] = useState(false);
+  const [showCancelInput, setShowCancelInput] = useState(false);
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
-    queryKey: ['admin', 'bookings', search, statusFilter],
+    queryKey: ["admin", "bookings", search, statusFilter],
     queryFn: async () => {
-      const { data } = await apiClient.get('/admin/bookings', {
+      const { data } = await apiClient.get("/admin/bookings", {
         params: {
           search: search || undefined,
-          status: statusFilter === 'ALL' ? undefined : statusFilter,
+          status: statusFilter === "ALL" ? undefined : statusFilter,
         },
       });
       return data;
@@ -54,10 +56,10 @@ export default function BookingsOpsPage() {
   });
 
   const { data: verifiedProviders } = useQuery<Provider[]>({
-    queryKey: ['admin', 'providers', 'verified'],
+    queryKey: ["admin", "providers", "verified"],
     queryFn: async () => {
-      const { data } = await apiClient.get('/admin/providers', {
-        params: { verificationStatus: 'VERIFIED' },
+      const { data } = await apiClient.get("/admin/providers", {
+        params: { verificationStatus: "VERIFIED" },
       });
       return data;
     },
@@ -67,19 +69,40 @@ export default function BookingsOpsPage() {
     if (!selectedBooking || !targetProviderId) return;
     setReassigning(true);
     try {
-      await apiClient.patch(`/admin/bookings/${selectedBooking.id}/reassign`, {
-        providerId: targetProviderId,
-      });
-      toast.success('Booking successfully reassigned to provider!');
-      queryClient.invalidateQueries({ queryKey: ['admin', 'bookings'] });
+      await apiClient.patch(`/admin/bookings/${selectedBooking.id}/reassign`, { providerId: targetProviderId });
+      toast.success("Booking successfully reassigned to provider!");
+      queryClient.invalidateQueries({ queryKey: ["admin", "bookings"] });
       setSelectedBooking(null);
-      setTargetProviderId('');
+      setTargetProviderId("");
     } catch {
-      toast.error('Failed to reassign provider');
+      toast.error("Failed to reassign provider");
     } finally {
       setReassigning(false);
     }
   };
+
+  const handleStatusUpdate = async (status: BookingStatus, note?: string) => {
+    if (!selectedBooking) return;
+    setActioning(true);
+    try {
+      await apiClient.patch(`/admin/bookings/${selectedBooking.id}/status`, { status, note });
+      toast.success(`Booking marked as ${STATUS_CONFIG[status]?.label}`);
+      queryClient.invalidateQueries({ queryKey: ["admin", "bookings"] });
+      setSelectedBooking(null);
+      setShowCancelInput(false);
+      setCancelNote("");
+    } catch {
+      toast.error("Failed to update booking status");
+    } finally {
+      setActioning(false);
+    }
+  };
+
+  const waLink = (phone?: string) =>
+    phone ? `https://wa.me/${phone.replace(/[^0-9]/g, "")}` : "#";
+
+  const totalByStatus = (status: string) =>
+    bookings?.filter((b) => status === "ALL" || b.status === status).length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -87,38 +110,52 @@ export default function BookingsOpsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Live Bookings Operations</h1>
-          <p className="text-xs text-slate-500 mt-1">Realtime customer orders, dispatch queue, and manual provider assignment.</p>
+          <p className="text-xs text-slate-500 mt-1">
+            Realtime customer orders, dispatch queue, and manual provider assignment.
+          </p>
         </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="relative w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search customer phone/order..."
+              placeholder="Search customer name/phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-sm"
+              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-sm"
             />
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 shadow-sm"
-          >
-            <option value="ALL">All Order States</option>
-            <option value="PENDING">Pending Dispatch</option>
-            <option value="PROVIDER_ASSIGNED">Provider Assigned</option>
-            <option value="IN_PROGRESS">Work in Progress</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
         </div>
       </div>
 
-      {/* Bookings Table */}
+      {/* Filter tab pills */}
+      <div className="flex gap-2 flex-wrap">
+        {FILTER_TABS.map((tab) => {
+          const count = tab.value === "ALL" ? (bookings?.length ?? 0) : totalByStatus(tab.value);
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setStatusFilter(tab.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                statusFilter === tab.value
+                  ? "bg-emerald-600 text-white border-emerald-600"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300"
+              }`}
+            >
+              {tab.label}
+              <span
+                className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                  statusFilter === tab.value ? "bg-white/20" : "bg-slate-100"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -148,24 +185,46 @@ export default function BookingsOpsPage() {
                   return (
                     <tr key={b.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900 text-sm">{b.service?.name || 'Service'}</div>
+                        <div className="font-bold text-slate-900">{b.service?.name || "Service"}</div>
                         <div className="text-slate-400 text-[11px] mt-0.5">
-                          {b.scheduledAt ? new Date(b.scheduledAt).toLocaleString() : 'Scheduled Soon'}
+                          {b.scheduledAt ? new Date(b.scheduledAt).toLocaleString("en-IN") : "Scheduled Soon"}
                         </div>
                       </td>
-
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900">{b.customer?.name || 'Customer'}</div>
-                        <div className="text-slate-400 text-[11px] font-mono">{b.customer?.phone}</div>
+                        <div className="font-bold text-slate-900">{b.customer?.name || "Customer"}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-slate-400 text-[11px] font-mono">{b.customer?.phone}</span>
+                          {b.customer?.phone && (
+                            <a
+                              href={waLink(b.customer.phone)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-emerald-500 hover:text-emerald-700 transition"
+                              title="WhatsApp customer"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
                       </td>
-
                       <td className="px-6 py-4">
                         {b.provider ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px]">
-                              {b.provider.name?.charAt(0) || 'P'}
+                          <div>
+                            <div className="font-semibold text-slate-800">{b.provider.name}</div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-slate-400 text-[11px] font-mono">{b.provider.phone}</span>
+                              {b.provider.phone && (
+                                <a
+                                  href={waLink(b.provider.phone)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-emerald-500 hover:text-emerald-700 transition"
+                                  title="WhatsApp provider"
+                                >
+                                  <MessageSquare className="w-3 h-3" />
+                                </a>
+                              )}
                             </div>
-                            <span className="font-semibold text-slate-800">{b.provider.name}</span>
                           </div>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-[10px]">
@@ -174,21 +233,20 @@ export default function BookingsOpsPage() {
                           </span>
                         )}
                       </td>
-
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-bold ${status.bg} ${status.text}`}>
                           {status.label}
                         </span>
                       </td>
-
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900">?{b.price}</div>
-                        <div className="text-[10px] text-slate-400 uppercase font-bold">{b.paymentMode} · {b.paymentStatus}</div>
+                        <div className="font-bold text-slate-900">₹{b.price}</div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">
+                          {b.paymentMode} · {b.paymentStatus}
+                        </div>
                       </td>
-
                       <td className="px-6 py-4 text-right">
                         <button
-                          onClick={() => setSelectedBooking(b)}
+                          onClick={() => { setSelectedBooking(b); setShowCancelInput(false); setCancelNote(""); }}
                           className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
                         >
                           Manage
@@ -209,58 +267,158 @@ export default function BookingsOpsPage() {
         </div>
       </div>
 
-      {/* Booking Detail & Dispatch Drawer */}
+      {/* Booking Detail Drawer */}
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-white h-full shadow-2xl p-6 flex flex-col overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end">
+          <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col">
+            {/* Drawer header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
               <div>
-                <h3 className="font-black text-slate-900 text-lg">Order #{selectedBooking.id.slice(-6)}</h3>
+                <h3 className="font-black text-slate-900 text-lg">Order #{selectedBooking.id.slice(-8).toUpperCase()}</h3>
                 <p className="text-xs text-slate-400">{selectedBooking.service?.name}</p>
               </div>
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-              >
+              <button onClick={() => setSelectedBooking(null)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 py-6 space-y-6">
-              {/* Status Bar */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Order Status</div>
-                <div className="text-sm font-bold text-slate-900 flex items-center justify-between">
-                  <span>{STATUS_CONFIG[selectedBooking.status]?.label}</span>
-                  <span className="text-emerald-600 font-bold">?{selectedBooking.price}</span>
+            {/* Drawer body */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+              {/* Status card */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Order Status</p>
+                <div className="flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold ${STATUS_CONFIG[selectedBooking.status]?.bg} ${STATUS_CONFIG[selectedBooking.status]?.text}`}>
+                    {STATUS_CONFIG[selectedBooking.status]?.label}
+                  </span>
+                  <span className="text-emerald-600 font-black text-lg">₹{selectedBooking.price}</span>
                 </div>
               </div>
 
-              {/* Customer Contact */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Customer Details</div>
-                <div className="font-bold text-slate-900 text-sm">{selectedBooking.customer?.name}</div>
-                <div className="text-xs text-slate-600 font-mono">{selectedBooking.customer?.phone}</div>
+              {/* Customer */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">{selectedBooking.customer?.name}</p>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">{selectedBooking.customer?.phone}</p>
+                  </div>
+                  {selectedBooking.customer?.phone && (
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`tel:${selectedBooking.customer.phone}`}
+                        className="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+                        title="Call customer"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </a>
+                      <a
+                        href={waLink(selectedBooking.customer.phone)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition"
+                        title="WhatsApp customer"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Invoice Download Action */}
+              {/* Provider contact (if assigned) */}
+              {selectedBooking.provider && (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Assigned Provider</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">{selectedBooking.provider.name}</p>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">{selectedBooking.provider.phone}</p>
+                    </div>
+                    {selectedBooking.provider.phone && (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`tel:${selectedBooking.provider.phone}`}
+                          className="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+                        >
+                          <Phone className="w-4 h-4" />
+                        </a>
+                        <a
+                          href={waLink(selectedBooking.provider.phone)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-2 rounded-xl bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Invoice */}
               <a
-                href={`http://localhost:4000/v1/bookings/${selectedBooking.id}/invoice`}
+                href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/v1/bookings/${selectedBooking.id}/invoice`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-sm"
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition"
               >
                 <FileText className="w-4 h-4 text-emerald-400" />
-                <span>Download Tax Invoice (PDF)</span>
+                Download Tax Invoice (PDF)
               </a>
 
-              {/* Provider Assignment Action */}
-              <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-3">
-                <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+              {/* Status Actions */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status Actions</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {selectedBooking.status !== "COMPLETED" && (
+                    <button
+                      onClick={() => handleStatusUpdate("COMPLETED", "Force-completed by admin")}
+                      disabled={actioning}
+                      className="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition disabled:opacity-60 flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Force Complete
+                    </button>
+                  )}
+                  {selectedBooking.status !== "CANCELLED" && (
+                    <button
+                      onClick={() => setShowCancelInput(true)}
+                      className="py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold hover:bg-rose-100 transition flex items-center justify-center gap-1.5"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      Cancel Booking
+                    </button>
+                  )}
+                </div>
+                {showCancelInput && (
+                  <div className="space-y-2 p-3 bg-rose-50 rounded-xl border border-rose-200">
+                    <p className="text-[10px] font-bold text-rose-700">Cancellation reason (shown to customer):</p>
+                    <input
+                      type="text"
+                      placeholder="e.g. Customer requested, no provider available..."
+                      value={cancelNote}
+                      onChange={(e) => setCancelNote(e.target.value)}
+                      className="w-full bg-white border border-rose-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-rose-400"
+                    />
+                    <button
+                      onClick={() => handleStatusUpdate("CANCELLED", cancelNote || "Cancelled by admin")}
+                      disabled={actioning}
+                      className="w-full py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 disabled:opacity-60 transition"
+                    >
+                      {actioning ? "Cancelling..." : "Confirm Cancellation"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Reassign Provider */}
+              <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200 space-y-3">
+                <div className="flex items-center gap-2 text-indigo-800 font-bold text-xs">
                   <UserPlus className="w-4 h-4" />
                   <span>Manual Dispatch & Reassignment</span>
                 </div>
-
                 <select
                   value={targetProviderId}
                   onChange={(e) => setTargetProviderId(e.target.value)}
@@ -269,17 +427,16 @@ export default function BookingsOpsPage() {
                   <option value="">Choose verified professional...</option>
                   {verifiedProviders?.map((vp) => (
                     <option key={vp.id} value={vp.id}>
-                      {vp.name} ({vp.phone}) {vp.isOnDuty ? '· ON-DUTY' : ''}
+                      {vp.name} ({vp.phone}) {vp.isOnDuty ? "· ON-DUTY" : ""}
                     </option>
                   ))}
                 </select>
-
                 <button
                   disabled={!targetProviderId || reassigning}
                   onClick={handleReassign}
-                  className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-600/20 disabled:opacity-40"
+                  className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md disabled:opacity-40"
                 >
-                  {reassigning ? 'Dispatching...' : 'Assign & Notify Provider'}
+                  {reassigning ? "Dispatching..." : "Assign & Notify Provider"}
                 </button>
               </div>
             </div>

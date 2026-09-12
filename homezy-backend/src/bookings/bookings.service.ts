@@ -442,4 +442,14 @@ export class BookingsService {
   reassignProvider(bookingId: string, providerId: string) {
     return this.prisma.booking.update({ where: { id: bookingId }, data: { providerId, status: 'PROVIDER_ASSIGNED' } });
   }
+
+  adminUpdateStatus(bookingId: string, status: BookingStatus, note?: string) {
+    return this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { status },
+    }).then((b) => {
+      void this.recordStatusEvent(bookingId, status, note || `Admin updated status to ${status}`);
+      return b;
+    });
+  }
 }
