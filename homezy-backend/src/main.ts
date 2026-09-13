@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { Request, Response } from 'express';
 
 const logger = new Logger('Bootstrap');
 
@@ -56,8 +57,16 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = config.get<number>('PORT') ?? 4000;
-  await app.listen(port);
-  logger.log(`Homezy API running on http://localhost:${port}/v1`);
-  logger.log(`Swagger docs at http://localhost:${port}/docs`);
+
+  // Add /health BEFORE the v1 prefix (Render health checks call this)
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // Listen on 0.0.0.0 so Render can route traffic in
+  await app.listen(port, '0.0.0.0');
+  logger.log(`Homezy API running on http://0.0.0.0:${port}/v1`);
+  logger.log(`Swagger docs at http://0.0.0.0:${port}/docs`);
 }
 bootstrap();
